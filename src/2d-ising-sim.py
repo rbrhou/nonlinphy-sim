@@ -48,3 +48,22 @@ def init_lattice(L, state="random", rng=None):
     if state == "up":
         return np.ones((L, L), dtype=np.int8)
     return rng.choice(np.array([-1, 1], dtype=np.int8), size=(L, L))
+
+
+# ----------------------------------------------------------------------------
+# Checkerboard Metropolis
+# ----------------------------------------------------------------------------
+def metropolis_sweep(s, beta, J, h, masks, rng):
+    """One sweep = update black sublattice, then white. Sites on the same
+    sublattice share no bonds, so updating them simultaneously is exact."""
+    for mask in masks:
+        dE = 2.0 * s * (J * neighbour_sum(s) + h)
+        accept = mask & (rng.random(s.shape) < np.exp(-beta * dE))
+        s[accept] *= -1
+    return s
+ 
+ 
+def checkerboard_masks(L):
+    ii, jj = np.indices((L, L))
+    black = (ii + jj) % 2 == 0
+    return black, ~black  # L must be even for a proper bipartition
