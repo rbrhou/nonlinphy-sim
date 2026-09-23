@@ -67,3 +67,46 @@ def checkerboard_masks(L):
     ii, jj = np.indices((L, L))
     black = (ii + jj) % 2 == 0
     return black, ~black  # L must be even for a proper bipartition
+
+
+# ----------------------------------------------------------------------------
+# Wolff cluster algorithm (h = 0 only)
+# ----------------------------------------------------------------------------
+@njit(cache=True)
+def wolff_step(s, p_add, seed_i, seed_j, rands):
+    """Grow and flip one cluster. `rands` is a pre-drawn uniform buffer
+    (length >= 4 L^2) so the kernel needs no RNG state. Returns cluster size."""
+    L = s.shape[0]
+    stack_i = np.empty(L * L, dtype=np.int64)
+    stack_j = np.empty(L * L, dtype=np.int64)
+    s0 = s[seed_i, seed_j]
+    s[seed_i, seed_j] = -s0          # flip on insertion = visited marker
+    stack_i[0], stack_j[0] = seed_i, seed_j
+    top, size, k = 1, 1, 0
+    di = (1, -1, 0, 0)
+    dj = (0, 0, 1, -1)
+    while top > 0:
+        top -= 1
+        i, j = stack_i[top], stack_j[top]
+        for d in range(4):
+            ni = (i + di[d]) % L
+            nj = (j + dj[d]) % L
+            if s[ni, nj] == s0:
+                if rands[k] < p_add:
+                    s[ni, nj] = -s0
+                    stack_i[top], stack_j[top] = ni, nj
+                    top += 1
+                    size += 1
+                k += 1
+    return size
+ 
+ 
+def wolff_sweep(s, beta, J, rng):
+    """Flip clusters until ~L^2 spins have been flipped (≈ one sweep)."""
+    L = s.shape[0]
+    p_add = 1.0 - np.exp(-2.0 * beta * J)
+    flipped = 0
+    while flipped < L * L:
+        i, j = rng.integers(0, L, size=2)
+        flipped += wolff_step(s, p_add, i, j, rng.random(4 * L * L))
+    return s
