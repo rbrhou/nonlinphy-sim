@@ -110,3 +110,72 @@ def wolff_sweep(s, beta, J, rng):
         i, j = rng.integers(0, L, size=2)
         flipped += wolff_step(s, p_add, i, j, rng.random(4 * L * L))
     return s
+
+
+# ----------------------------------------------------------------------------
+# Simulation driver
+# ----------------------------------------------------------------------------
+def binned_error(x, n_bins=20):
+    """Standard error from n_bins block means (handles autocorrelation)."""
+    n = len(x) // n_bins
+    means = x[: n * n_bins].reshape(n_bins, n).mean(axis=1)
+    return means.std(ddof=1) / np.sqrt(n_bins)
+ 
+ 
+def simulate(L, T, n_therm=2000, n_meas=10000, algo="auto",
+             J=1.0, h=0.0, seed=None, s=None):
+    """Run one temperature. Returns a dict of observables and the final lattice."""
+    rng = np.random.default_rng(seed)
+    beta = 1.0 / T
+    N = L * L
+    if algo == "auto":
+        algo = "wolff" if (h == 0.0 and abs(T - T_C) < 0.5) else "metropolis"
+    if algo == "wolff" and h != 0.0:
+        raise ValueError("Wolff as implemented requires h = 0")
+    if s is None:
+        s = init_lattice(L, "up" if T < T_C else "random", rng)
+ 
+    masks = checkerboard_masks(L)
+    step = (lambda: wolff_sweep(s, beta, J, rng)) if algo == "wolff" else \
+           (lambda: metropolis_sweep(s, beta, J, h, masks, rng))
+ 
+    for _ in range(n_therm):
+        step()
+ 
+    E = np.empty(n_meas)
+    M = np.empty(n_meas)
+    for t in range(n_meas):
+        step()
+        E[t] = energy(s, J, h)
+        M[t] = s.sum()
+ 
+    e, m = E / N, np.abs(M) / N
+    m2, m4 = (M / N) ** 2, (M / N) ** 4
+    out = {
+        "L": L, "T": T, "algo": algo,
+        "e": e.mean(), "e_err": binned_error(e),
+        "m": m.mean(), "m_err": binned_error(m),
+        "C": beta**2 * (np.mean(E**2) - np.mean(E) ** 2) / N,
+        "chi": beta * N * (np.mean(m2) - np.mean(m) ** 2),
+        "U4": 1.0 - np.mean(m4) / (3.0 * np.mean(m2) ** 2),
+    }
+    return out, s
+ 
+ 
+def onsager_m(T):
+    T = np.asarray(T, dtype=float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        m = (1.0 - np.sinh(2.0 / T) ** -4) ** 0.125
+    return np.where(T < T_C, m, 0.0)
+ 
+ 
+def temperature_scan(L, temps, **kw):
+    """Scan temperatures low -> high, reusing the lattice as a warm start."""
+    results, s = [], None
+    for T in sorted(temps):
+        r, s = simulate(L, T, s=s, **kw)
+        results.append(r)
+        print(f"L={L:3d} T={T:.3f} [{r['algo']:10s}] "
+              f"e={r['e']:+.4f}±{r['e_err']:.4f}  |m|={r['m']:.4f}±{r['m_err']:.4f}  "
+              f"C={r['C']:.3f}  chi={r['chi']:8.3f}  U4={r['U4']:.4f}")
+    return results
