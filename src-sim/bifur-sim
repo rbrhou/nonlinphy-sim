@@ -1,0 +1,17 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+ 
+
+def fixed_point_branches(f, r_range, x_range, n=800):
+    """Return a list of (r, x) polylines where f(x, r) = 0."""
+    r = np.linspace(*r_range, n)
+    x = np.linspace(*x_range, n)
+    R, Xg = np.meshgrid(r, x)
+    F = f(Xg, R)
+ 
+    fig_tmp, ax_tmp = plt.subplots()
+    cs = ax_tmp.contour(R, Xg, F, levels=[0.0])
+    segs = [s for s in cs.allsegs[0] if len(s) > 1]
+    plt.close(fig_tmp)
+    return segs, (R, Xg, F)
