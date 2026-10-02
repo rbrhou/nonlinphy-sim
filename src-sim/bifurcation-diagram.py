@@ -2,7 +2,7 @@
 Phase portraits of three one-dimensional flows, with the vector field on the
 line marking stability.
  
-    (1)  Ndot = -aN ln(bN)
+    (1)  xdot = -x ln(x)
     (2)  xdot = x - x^3
     (3)  xdot = 1 + (1/2) cos x
     (4)  xdot = e^x - cos x
