@@ -2,14 +2,11 @@ import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
-
-data = "data"
-
+data = "Copy of PHY224 Planck Constant Lab - Sheet1.csv"
 
 c = 2.99792458e8             # speed of light (m/s)
 e = 1.602176634e-19          # elementary charge (C)
 h_accepted = 6.62607015e-34  # accepted Planck constant (J s)
-
 
 def model_function(f, h_over_e, V_offset):
     """Threshold voltage vs. frequency: eV = hf - E_loss  ->  V = (h/e) f + V_offset."""
@@ -35,10 +32,9 @@ def chi2_test(model, popt, x, y_measured, sigma_y):
     return chi2, dof
 
 def plot_fit(f, sigma_f, V, sigma_V, popt):
-    f_line = np.linspace(f.min() * 0.97, f.max() * 1.03, 200)
-    plt.errorbar(f / 1e14, V, xerr=sigma_f / 1e14, yerr=sigma_V, fmt="o", capsize=3, label="data")
-    plt.plot(f_line / 1e14, model_function(f_line, *popt), label=r"$V = (h/e)\,f + V_{\text{intercept}}$")
-    plt.xlabel(r"Frequency ($10^{14}$ Hz)")
+    plt.errorbar(f / 1e14, V, xerr=sigma_f / 1e14, yerr=sigma_V, marker='o', ls='', lw=1, label="data")
+    plt.plot(f / 1e14, model_function(f, *popt), label=r"$V = (h/e)\,f + V_{\mathrm{offset}}$")
+    plt.xlabel("Frequency (10^14 Hz)")
     plt.ylabel("Threshold voltage (V)")
     plt.title("LED Threshold Voltage vs. Frequency")
     plt.legend()
@@ -52,7 +48,6 @@ def plot_residuals(f, V, sigma_eff, popt):
     plt.ylabel("Residual (V)")
     plt.title("Residuals plot")
     plt.show()
-
 
 f, sigma_f, V, sigma_V = load_data(data)
 
