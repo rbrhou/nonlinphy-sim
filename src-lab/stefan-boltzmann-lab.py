@@ -10,20 +10,16 @@ def load_data(path):
     data = np.loadtxt(path, delimiter=",", skiprows=1, usecols=(1, 2, 4))
     return data[:, 0], data[:, 1], data[:, 2]
 
-
 def model_fixed(V, k):
     return k * V**n_theory
 
-
 def model_free(V, k, n):
     return k * V**n
-
 
 def chi2_test(model, popt, V, I, sigma_I):
     chi2 = np.sum(((I - model(V, *popt)) / sigma_I) ** 2)
     dof = 8
     return chi2, dof
-
 
 def plot_fit(V, I, sigma_I, popt):
     V_sorted = np.sort(V)
@@ -54,7 +50,6 @@ def plot_loglog(V, I, sigma_I, popt):
     plt.title("Loglog plot")
     plt.legend()
     plt.show()
-
 
 V, I, sigma_I = load_data(data)
 
