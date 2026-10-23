@@ -3,8 +3,6 @@
  
     H = -J * sum_<ij> s_i s_j - h * sum_i s_i,   s_i in {-1, +1}
  
-Algorithms
-----------
 - Checkerboard Metropolis (vectorised NumPy): local updates, fine away from T_c.
 - Wolff single-cluster (Numba if available): beats critical slowing down near T_c.
  
